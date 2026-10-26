@@ -497,28 +497,50 @@ def process_agent_target(target: dict) -> None:
     name = agent_monitor.safe_name(target["name"])   # path-injection guard
     date_str = date.today().isoformat()
 
+    def _finish_local(base: dict, *, skipped: str) -> None:
+        """Scan the captured trace locally. A hit is written and advised.
+
+        A miss keeps the previous no-verdict record shape. The scan reads the
+        trace file only; it does not call a model API.
+        """
+        scanned = agent_monitor.annotate_trace(
+            {**base, "verdict": {}, "steps": list(base.get("steps") or [])},
+            target.get("agent_trace"))
+        if not scanned.get("concerning_behaviors"):
+            agent_monitor.write_agent_record(
+                DATA_DIR, name, date_str, base, "no-verdict.json")
+            if skipped.startswith("engine failed"):
+                print(f">>> agent {name}: no-verdict ({skipped})")
+            else:
+                print(f">>> agent {name}: skipped ({skipped})")
+            return
+        agent_monitor.write_agent_record(DATA_DIR, name, date_str, scanned)
+        result = agent_monitor.monitor_agent(
+            name, scanned, target_public=target.get("public", False))
+        action = (result.get("behavior_advisory") or {}).get("action")
+        print(f">>> agent {name}: behavior_alert={result['behavior_alert']} "
+              f"advisory={action} ({skipped})")
+
     ok, reason = should_probe(target)                # SAME auth/commercial gate as endpoints
     if not ok:
-        agent_monitor.write_agent_record(DATA_DIR, name, date_str,
-                                         {"kind": "agent", "no_verdict": reason}, "no-verdict.json")
-        print(f">>> agent {name}: skipped ({reason})")
+        _finish_local({"kind": "agent", "no_verdict": reason}, skipped=reason)
         return
 
     export = os.path.join(STAGING_DIR, f"{name}-agent.json")
     try:
         record = agent_monitor.run_agent_target(target["agent_trace"], export)
     except (RuntimeError, subprocess.TimeoutExpired, OSError, ValueError) as e:
-        agent_monitor.write_agent_record(DATA_DIR, name, date_str,
-                                         {"kind": "agent", "no_verdict": f"engine failed: {e}"},
-                                         "no-verdict.json")
-        print(f">>> agent {name}: no-verdict ({e})")
+        _finish_local({"kind": "agent", "no_verdict": f"engine failed: {e}"},
+                      skipped=f"engine failed: {e}")
         return
 
+    record = agent_monitor.annotate_trace(record, target.get("agent_trace"))
     agent_monitor.write_agent_record(DATA_DIR, name, date_str, record)
     result = agent_monitor.monitor_agent(name, record, target_public=target.get("public", False))
     print(f">>> agent {name}: verdict={record.get('verdict',{}).get('label')} "
           f"fp={result['fingerprint'][:8]} advisory={result['advisory'].get('action')} "
-          f"switch_in_run={result['switch_in_run']}")
+          f"switch_in_run={result['switch_in_run']} "
+          f"behavior_alert={result.get('behavior_alert')}")
 
 
 def main() -> int:

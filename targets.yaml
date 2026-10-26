@@ -293,6 +293,10 @@ targets:
   # record under data/agents/<name>/<date>/, and drifts the agent fingerprint;
   # a composition change opens a numbered MPA agent advisory. Provide a captured
   # OTel-GenAI / minimal-JSON trace of the authorized agent run.
+  # The same file is scanned locally (runner/agent_behaviors.py) for the
+  # 2026-10-26 Cohere tool behaviors. A hit is recorded on verdict.json, listed
+  # on the site agent panel, and advised, with no model call and no API key.
+  # A quiet trace is left as-is.
   # - name: acme-copilot
   #   agent_trace: traces/acme-copilot/latest.json
   #   public: true         # full transparency: published in full when probed

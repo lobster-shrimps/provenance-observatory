@@ -237,6 +237,64 @@ def on_model_switch(target_name: str, events: list, *, verdict: dict | None,
     return {"action": "opened", "staging_id": sid, "target": target_name}
 
 
+def on_agent_behavior(target_name: str, findings: list, *, target_public: bool,
+                      now: datetime | None = None) -> dict:
+    """A captured agent trace matched a Cohere 2026-10-26 open-weight behavior.
+
+    Opens a draft in the same disclosure pipeline as a model-switch advisory.
+    Deduped per target per day per behavior-id set. A repeat the same day
+    returns action ``exists`` and does not open a second draft.
+    """
+    now = _now(now)
+    rows = []
+    for item in findings or []:
+        if isinstance(item, str):
+            item = {"id": item, "summary": item}
+        if isinstance(item, dict) and item.get("id"):
+            rows.append(item)
+    rows.sort(key=lambda row: row["id"])
+    ids = [row["id"] for row in rows]
+    sig = hashlib.sha256(",".join(ids).encode()).hexdigest()[:8]
+    sid = f"{target_name}-{now.date().isoformat()}-behavior-{sig}"
+    if os.path.exists(_advisory_path(target_name, sid)):
+        return {"action": "exists", "staging_id": sid, "target": target_name}
+    # Local import: agent_behaviors must not import advisory (no cycle).
+    import agent_behaviors  # noqa: E402
+    sev = agent_behaviors.severity(rows)
+    summary = ("Agent trace matched open-weight behavior described by Cohere "
+               f"(2026-10-26): {', '.join(ids)}")
+    evidence = {
+        "kind": "agent_behavior",
+        "concerning_behaviors": rows,
+        "summary": summary,
+        "severity": sev,
+        "source": agent_behaviors.SOURCE_URL,
+    }
+    evidence["evidence_manifest_sha256"] = evidence_manifest_sha256(evidence)
+    adv = {
+        "staging_id": sid, "target": target_name, "status": "draft",
+        "public": bool(target_public), "opened_at": now.isoformat(),
+        "notified_at": now.isoformat(),
+        "baseline_fingerprint": None, "current_fingerprint": None,
+        "evidence": evidence, "advisory_id": None,
+        "history": [{"ts": now.isoformat(), "event": "opened",
+                     "note": "open-weight agent behavior matched"}],
+    }
+    _write_advisory(target_name, adv)
+    with open(os.path.join(_target_dir(target_name), f"notice-{sid}.txt"), "w") as f:
+        f.write(f"Provenance Observatory — publication notice\n"
+                f"Target: {target_name}\nOpened: {adv['opened_at']}\n"
+                f"Finding: {summary}\n"
+                f"Evidence manifest SHA-256: {evidence['evidence_manifest_sha256']}\n"
+                f"Source: {agent_behaviors.SOURCE_URL}\n"
+                f"This finding and its interpreted verdict are published as "
+                f"collected, in full. You may dispute it at any time; a "
+                f"well-founded dispute is answered with a prominent, permanent "
+                f"correction/retraction appended to the log.\n")
+    return {"action": "opened", "staging_id": sid, "target": target_name,
+            "severity": sev}
+
+
 def close_advisory(target_name: str, advisory_fingerprint: str,
                    *, now: datetime | None = None) -> dict:
     """Maintainer NORMAL close (resolved). Advances the pinned baseline."""
@@ -309,8 +367,13 @@ def _public_record(adv: dict) -> dict:
         rec.update(kind="model_switch", summary=ev.get("summary"),
                    severity=ev.get("severity"),
                    model_change_events=ev.get("model_change_events"))
+    if ev.get("kind") == "agent_behavior":
+        rec.update(kind="agent_behavior", summary=ev.get("summary"),
+                   severity=ev.get("severity"),
+                   concerning_behaviors=ev.get("concerning_behaviors"),
+                   source=ev.get("source"))
     return rec
 
 
-__all__ = ["on_drift", "close_advisory", "promote", "load_state", "save_state",
-           "evidence_manifest_sha256", "baseline"]
+__all__ = ["on_drift", "on_agent_behavior", "close_advisory", "promote", "load_state",
+           "save_state", "evidence_manifest_sha256", "baseline"]

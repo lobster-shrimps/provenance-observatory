@@ -1091,6 +1091,16 @@ def _advisory_page(adv: dict, paused: dict | None = None) -> str:
             f'[{html.escape(str(e.get("kind")))}]</li>' for e in events
         ) or "<li>(no switch detail recorded)</li>"
         ev_title = "Evidence (mid-session model switch)"
+    elif adv.get("kind") == "agent_behavior" or adv.get("concerning_behaviors"):
+        rows = adv.get("concerning_behaviors") or []
+        ch = "".join(
+            f'<li><b>{html.escape(str(b.get("id") if isinstance(b, dict) else b))}</b>'
+            + (f' — {html.escape(str(b.get("summary") or ""))}'
+               if isinstance(b, dict) and b.get("summary") else "")
+            + "</li>"
+            for b in rows
+        ) or "<li>(no behavior detail recorded)</li>"
+        ev_title = "Evidence (agent tool behavior)"
     else:
         changes = (adv.get("evidence", {}) or {}).get("monitor_changes") or adv.get("monitor_changes") or []
         ch = "".join(f'<li><b>{html.escape(c.get("severity",""))}</b> '
@@ -1764,11 +1774,30 @@ def _agent_panel(agent_records: dict) -> str:
             for s in steps)
         table = (f'<table class="agent-tbl"><thead><tr><th>Model</th><th>Provenance</th>'
                  f'<th>Jurisdiction</th></tr></thead><tbody>{srows}</tbody></table>')
+        behaviors = v.get("concerning_behaviors") or rec.get("concerning_behaviors") or []
+        behavior_html = ""
+        if isinstance(behaviors, list) and behaviors:
+            items = []
+            for beh in behaviors:
+                if isinstance(beh, dict):
+                    bid = str(beh.get("id") or "")
+                    summary = str(beh.get("summary") or "")
+                else:
+                    bid, summary = str(beh), ""
+                if not bid:
+                    continue
+                line = f"<b>{html.escape(bid)}</b>"
+                if summary:
+                    line += f" — {html.escape(summary)}"
+                items.append(f"<li>{line}</li>")
+            if items:
+                behavior_html = ('<p class="small">Concerning agent behavior</p><ul class="small">'
+                                 + "".join(items) + "</ul>")
         cards.append(
             f'<div class="agent-card"><div class="agent-head">'
             f'<b class="mono">{html.escape(target)}</b> <span class="small muted">{endpoint}</span>'
             f'{head_verdict}</div>'
-            f'<p class="small muted">{note}</p>{table}</div>')
+            f'<p class="small muted">{note}</p>{behavior_html}{table}</div>')
     return (f'<section class="agents"><h2>Agent &amp; platform assessments</h2>'
             f'<p class="muted small">Each platform\'s advertised models, active-probed. '
             f'Provenance is the model\'s weight origin; jurisdiction is who runs it '
