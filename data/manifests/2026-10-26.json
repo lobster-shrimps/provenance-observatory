@@ -1,0 +1,13 @@
+{
+  "schema_version": "0.1.0",
+  "date": "2026-10-26",
+  "entries": {
+    "anthropic-frontier/2026-10-26/verdict.json": "a946ccedfd4bb1c72189c9087a8cb62881543b425d2033a4b8ae720142b4eb3a",
+    "control-deepseek-positive/2026-10-26/verdict.json": "e312123672be4c204416a9b551df5707c7fb8e8474ad7e7c5adbc7bab028e3e8",
+    "control-openai-negative/2026-10-26/verdict.json": "a214d815689e60f7a3b99cc12eca8ffbeea4a15bb0221051d6d2eeaad97ebbc9",
+    "deepseek-direct/2026-10-26/verdict.json": "588c1691121d145bcccf8ce60a3f2a8791ddb44dbadda3adffaa540b9206efd6",
+    "moonshot-direct/2026-10-26/verdict.json": "9fb10e90aa8437a2f647fd9399f28927df7949ecc9fce9fc50445708af3fd055",
+    "openai-frontier/2026-10-26/verdict.json": "2b9d127ca225ca08c329dbaf0b590078f3ca46be6e55bf6ba4e2e2e0f4f53138"
+  },
+  "manifest_root": "55e9944145b1558d73a161a7ff8e45397bbace9fb939c95098e640feffc07635"
+}
