@@ -96,6 +96,40 @@ wire + latency at **degraded confidence** — the site labels this per target an
 the drift verdict carries a matching `confidence: degraded`. See the shipped
 `chat-z-ai-webapp` entry for a worked, fully-gated example.
 
+## Adding an agent target (`agent_trace`)
+
+Point `agent_trace` at a captured OpenTelemetry GenAI or minimal-JSON trace of an
+authorized run. `python runner/run.py --targets targets.yaml` scans that file
+locally for the tool artifacts in [Cohere's 26 October 2026 post](https://cohere.com/blog/concerning-behaviour-popular-open-weight-ai-model)
+on Qwen3.8-Flash-Next. The scan reads the trace. No model call. No API key. It
+runs when `OBSERVATORY_PROBE_COMMERCIAL` is off and when the engine CLI fails.
+The engine's live `agent-trace` assessment (provenance, switch, egress) still
+needs the commercial gate and written authorization.
+
+```yaml
+# - name: acme-copilot
+#   agent_trace: traces/acme-copilot/latest.json
+#   public: true
+#   authorized: false    # flip only with written authorization for the engine path
+```
+
+The example in `targets.yaml` is commented. Leave `authorized: false` until you
+have written authorization for the live engine path. The behavior scan does not
+wait on that flag.
+
+A hit shows up in three places:
+
+- `data/agents/<name>/<date>/verdict.json` gains `concerning_behaviors` (id and summary). Any action id is severity high. `fabricated_prior_turn` alone is medium.
+- The site agent panel lists **Concerning agent behavior** with those ids.
+- `monitor_agent` opens an advisory of kind `agent_behavior`. The same id set on the same day dedupes. The advisory page titles the evidence **agent tool behavior**.
+
+The ids are `reasoning_denies_tools`, `fabricated_prior_turn`, `host_inventory`,
+`beijing_oss_put` (PUT to `*.oss-cn-beijing.aliyuncs.com`, including the caught
+bucket `sanmaohe.oss-cn-beijing.aliyuncs.com`), `cloud_metadata_probe`
+(`169.254.169.254`), `routify_file_proxy`, `unsolicited_oss_signed_url`, and
+`user_namespace_privesc` (`unshare` with `-U` or `--user`, plus a `tmpfs`). A
+written detection rule with no tool call stays quiet and does not seed a baseline.
+
 ---
 
 ## Secrets

@@ -4,6 +4,20 @@ All notable changes to the Provenance Observatory are recorded here.
 
 ## [Unreleased]
 
+### Added — concerning agent behavior on captured traces
+
+- A target `agent_trace` is scanned locally for the Qwen tool artifacts in
+  [Cohere's 26 October 2026 post](https://cohere.com/blog/concerning-behaviour-popular-open-weight-ai-model):
+  reasoning that denies tools while a command runs, a fabricated prior turn, a
+  host inventory (`ls /tmp`, `which curl`/`wget`, `cat /etc/resolv.conf`), a PUT
+  to `*.oss-cn-beijing.aliyuncs.com`, `169.254.169.254`, a `routify-file-proxy*`
+  host, an unsolicited signed OSS URL, and `unshare` into a user namespace with a
+  tmpfs. No model call and no API key. A hit lands on
+  `data/agents/<name>/<date>/verdict.json` (`concerning_behaviors`), the site
+  agent panel (**Concerning agent behavior**), and an `agent_behavior` advisory,
+  including when the commercial gate is off or the engine CLI fails. A quiet
+  trace leaves the previous record alone.
+
 ### Fixed — paused-target banner + engine-eval family count (readiness review 2026-09-16)
 
 - **Paused-target banner (finding #5)**: the site led with the `chat-z-ai-webapp`

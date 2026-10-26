@@ -48,7 +48,7 @@ It surfaces the evidence three ways:
 
 **🔀 Model-switch detection.** Beyond day-over-day drift, it catches a served model changing identity mid-run (`session_boundary`) and ingests captured session transcripts to surface mid-session identity flips — e.g. the live site's `chat-z-ai-webapp` alert: **Google Gemini persona → GLM (Zhipu)**, flagged as a misrepresentation.
 
-**🤖 Continuous agent monitoring.** A target with an `agent_trace` is assessed nightly by the engine's agent flight recorder; `runner/agent_monitor.py` fingerprints the agent's *model composition* and opens a numbered advisory when it drifts, routes differently, or egresses to a new jurisdiction.
+**🤖 Continuous agent monitoring.** A target with an `agent_trace` is assessed nightly by the engine's agent flight recorder; `runner/agent_monitor.py` fingerprints the agent's *model composition* and opens a numbered advisory when it drifts, routes differently, or egresses to a new jurisdiction. The same captured trace is scanned locally (`runner/agent_behaviors.py`) for the tool artifacts in [Cohere's 26 October 2026 post](https://cohere.com/blog/concerning-behaviour-popular-open-weight-ai-model) on Qwen3.8-Flash-Next: reasoning that denies tools while a shell command runs, a fabricated prior-turn acknowledgment ("Understood. I will follow these instructions."), a host inventory (`ls /tmp`, `which curl` and `wget`, `cat /etc/resolv.conf`), a PUT to `*.oss-cn-beijing.aliyuncs.com`, `169.254.169.254`, a `routify-file-proxy*` host, an unsolicited signed `aliyuncs.com` URL, and `unshare` into a user namespace that mounts a tmpfs. The scan reads the trace file. No model call. No API key. It still runs when the commercial gate is off or the engine CLI fails. A hit is written on `data/agents/<name>/<date>/verdict.json` as `concerning_behaviors`, listed on the site agent panel as **Concerning agent behavior**, and opens an `agent_behavior` advisory. A quiet trace leaves the previous record alone.
 
 ## ⚡ Quick start (local dev)
 
@@ -92,6 +92,7 @@ Each run writes neutral evidence + a verdict to `data/<target>/<date>/verdict.js
 | `runner/run.py` | Nightly runner — probe, drift + session-boundary check (via the provenance-probe CLI) |
 | `runner/advisory.py` · `promote.py` | Drift / model-switch → advisory → numbered public advisory (MPA-YYYY-NNN) |
 | `runner/agent_monitor.py` | Continuous agent monitoring + agent advisories |
+| `runner/agent_behaviors.py` | Hermetic scan of a captured agent trace for the 2026-10-26 Cohere tool behaviors (no model call, no API key) |
 | `lib/verdict.py` · `records.py` · `signing.py` · `feed.py` | Record assembly, canonical readers, cosign/Rekor signing, RSS |
 | `api/` | Live JSON API (FastAPI). See [`api/README.md`](api/README.md) + [`api/DEPLOY.md`](api/DEPLOY.md) |
 | `site/build.py` | Static site renderer |
