@@ -8,7 +8,13 @@ name: observatory
 on:
   schedule:
     - cron: "17 3 * * *"    # nightly; a second entry can hedge cron flakiness
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      sign_date:
+        description: "Sign data/manifests/YYYY-MM-DD.json with the nightly keyless identity and do not probe"
+        required: false
+        type: string
+        default: ""
 
 # Serialize runs so the redundant cron + manual dispatch can't double-commit
 # or race on push. Queue, don't cancel — a half-finished run should complete.
@@ -39,13 +45,44 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install pinned probe + deps (reproducible)
+        if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
         # Pinned PyPI install (requirements.txt: llm-provenance-probe==<version> +
         # pyyaml) instead of git@main — a reproducible, non-moving build. Bump the
         # pin in requirements.txt to adopt a new probe release. (The eval-harness
         # scripts still clone source: eval/ is not packaged in the wheel.)
         run: pip install -r requirements.txt
       - uses: sigstore/cosign-installer@v3   # cosign for keyless evidence signing
+      - name: Sign an existing manifest (no probe)
+        if: github.event_name == 'workflow_dispatch' && inputs.sign_date != ''
+        env:
+          COSIGN_YES: "true"
+          SIGN_DATE: ${{ inputs.sign_date }}
+        run: |
+          case "$SIGN_DATE" in
+            [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+            *) echo "refusing to sign unexpected date: $SIGN_DATE" >&2; exit 1 ;;
+          esac
+          python - <<'PY'
+          import os, sys
+          sys.path.insert(0, ".")
+          from lib import signing
+          day = os.environ["SIGN_DATE"]
+          path = f"data/manifests/{day}.json"
+          if not os.path.isfile(path):
+              sys.exit(f"no manifest at {path}")
+          result = signing.sign_manifest(path)
+          print(result)
+          if not result.get("signed"):
+              sys.exit(1)
+          PY
+          git config user.name "observatory-bot"
+          git config user.email "observatory-bot@users.noreply.github.com"
+          git add "data/manifests/${SIGN_DATE}.json.cosign.bundle"
+          git diff --cached --quiet && { echo "cosign reported success but produced no bundle" >&2; exit 1; }
+          git commit -m "data: sign manifest ${SIGN_DATE}"
+          git push
       - name: Run nightly probes (builds + signs the day's manifest)
+        if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}   # live CN positive control + deepseek-direct
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}       # live US negative control + openai-frontier
@@ -78,11 +115,13 @@ jobs:
         # requirements.txt probe pin to start regenerating the service catalog.
         run: python runner/run.py --targets targets.yaml
       - name: Ingest session transcripts (mid-session model-switch detection)
+        if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
         run: python runner/ingest_transcripts.py --data data --public control-deepseek-positive,control-openai-negative
       - name: Refresh engine eval summary (assurance badge auto-tracks the engine)
+        if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
         run: bash scripts/refresh-engine-eval.sh
       - name: Alert on model switch (fast alerting)
-        if: always()
+        if: always() && (github.event_name != 'workflow_dispatch' || inputs.sign_date == '')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -115,6 +154,7 @@ jobs:
           fi
       - name: Commit neutral evidence + signed manifest
         id: commit
+        if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
         run: |
           git config user.name "observatory-bot"
           git config user.email "observatory-bot@users.noreply.github.com"
@@ -152,6 +192,7 @@ jobs:
   # "GitHub Actions" in repo Settings → Pages.)
   site:
     needs: probe
+    if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
