@@ -15,6 +15,11 @@ on:
         required: false
         type: string
         default: ""
+      site_only:
+        description: "Render and deploy the site from the current commit. Do not probe or sign."
+        required: false
+        type: boolean
+        default: false
 
 # Serialize runs so the redundant cron + manual dispatch can't double-commit
 # or race on push. Queue, don't cancel — a half-finished run should complete.
@@ -33,6 +38,7 @@ permissions:
 
 jobs:
   probe:
+    if: github.event_name != 'workflow_dispatch' || inputs.site_only != true
     runs-on: ubuntu-latest
     environment: observatory          # environment-scoped secrets live here
     permissions:
@@ -192,7 +198,11 @@ jobs:
   # "GitHub Actions" in repo Settings → Pages.)
   site:
     needs: probe
-    if: github.event_name != 'workflow_dispatch' || inputs.sign_date == ''
+    if: |
+      always() && (
+        (needs.probe.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.sign_date == ''))
+        || (needs.probe.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.site_only == true)
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
