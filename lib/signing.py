@@ -50,7 +50,7 @@ def build_manifest(data_dir: str, date_str: str) -> dict:
     # transcript.json carries an interpreted misrepresentation verdict — sign it
     # too (was previously unsigned) AND run it through the policy, so a proxy /
     # CONTRADICTED transcript is quarantined, not silently published (adversarial).
-    for name in ("verdict.json", "no-verdict.json", "transcript.json"):
+    for name in ("verdict.json", "no-verdict.json", "transcript.json", "grade.json"):
         for p in _iter_records(data_dir, date_str, name):
             rel = os.path.relpath(p, data_dir)
             try:
@@ -79,6 +79,9 @@ def _iter_records(data_dir: str, date_str: str, filename: str):
     yield from glob.glob(os.path.join(data_dir, "*", date_str, filename))
     # agent records (engine `--export` drops, E5): data/agents/<target>/<date>/verdict.json
     yield from glob.glob(os.path.join(data_dir, "agents", "*", date_str, filename))
+    # Pinned-trace grade (hermetic checker, no probe). Signed with the day's log.
+    yield from glob.glob(os.path.join(
+        data_dir, "agent-controls", "*", date_str, filename))
 
 
 def write_manifest(data_dir: str, date_str: str) -> str:

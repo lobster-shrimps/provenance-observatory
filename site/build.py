@@ -1748,6 +1748,39 @@ _APP_JS = r"""
 PAGE_SIZE = 25
 
 
+def _trace_grade_html(data_dir: str) -> str:
+    """One paragraph for the pinned Qwen trace grade, when a receipt exists."""
+    paths = sorted(glob.glob(os.path.join(
+        data_dir, "agent-controls", "*", "*", "grade.json")))
+    if not paths:
+        return ""
+    try:
+        with open(paths[-1], encoding="utf-8") as fh:
+            rec = json.load(fh)
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(rec, dict):
+        return ""
+    ids = rec.get("behavior_ids") if isinstance(rec.get("behavior_ids"), list) else []
+    prefill = (rec.get("prefill_behavior_ids")
+               if isinstance(rec.get("prefill_behavior_ids"), list) else [])
+    id_text = ", ".join(html.escape(str(i)) for i in ids) or "none"
+    if prefill:
+        prefill_text = "prefill ids: " + ", ".join(html.escape(str(i)) for i in prefill)
+    else:
+        prefill_text = "prefill completion stayed quiet"
+    sha = html.escape(str(rec.get("trace_sha256") or "")[:16])
+    dataset = html.escape(str(rec.get("dataset") or ""))
+    day = html.escape(str(rec.get("date") or ""))
+    return (
+        '<section class="agents"><h2>Pinned trace grade</h2>'
+        f'<p class="small">Graded <span class="mono">{dataset}</span> '
+        f'({day}, trace sha256 {sha}…) with the existing checker. '
+        f'Ids: {id_text}. {prefill_text}. No new behavior ids. '
+        'No model call.</p></section>'
+    )
+
+
 def _agent_panel(agent_records: dict) -> str:
     """Agent flight-recorder assessments: per platform/agent, a per-model board of
     provenance + jurisdiction. Neutral evidence + verdict tiers for the authorized
@@ -1807,7 +1840,8 @@ def _agent_panel(agent_records: dict) -> str:
 
 def render(records: dict, promoted: dict, *, now_iso: str, engine_eval: dict | None = None,
            manifests: list[dict] | None = None, transcripts: dict | None = None,
-           agent_records: dict | None = None, paused: dict | None = None) -> str:
+           agent_records: dict | None = None, paused: dict | None = None,
+           trace_grade: str = "") -> str:
     probe_url = os.environ.get("OBSERVATORY_PROBE_URL", DEFAULT_PROBE_URL)
     api_url = os.environ.get("OBSERVATORY_API_URL", DEFAULT_API_URL)
     app_js = _APP_JS.replace("__API_URL__", api_url).replace("__PAGE_SIZE__", str(PAGE_SIZE))
@@ -1847,6 +1881,7 @@ known-answer + negative controls with a published false-positive rate.</div>
   <div class="stat"><b>{html.escape(now_iso[:16])}</b><span>LAST UPDATED (UTC)</span></div>
 </div>
 {_model_switch_panel(transcripts, paused)}
+{trace_grade}
 {_agent_panel(agent_records or {})}
 <div class="layout">
   <main>
@@ -1894,7 +1929,7 @@ def build(data_dir: str = DATA_DIR, out_dir: str = OUT_DIR, *, now_iso: str | No
     with open(out_path, "w") as f:
         f.write(render(records, promoted, now_iso=now_iso, engine_eval=engine_eval,
                        manifests=manifests, transcripts=transcripts, agent_records=agent_records,
-                       paused=paused))
+                       paused=paused, trace_grade=_trace_grade_html(data_dir)))
 
     # Footer + nav content pages (real links, not dead spans).
     for fname, doc in (

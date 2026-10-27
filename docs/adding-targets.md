@@ -130,6 +130,15 @@ bucket `sanmaohe.oss-cn-beijing.aliyuncs.com`), `cloud_metadata_probe`
 `user_namespace_privesc` (`unshare` with `-U` or `--user`, plus a `tmpfs`). A
 written detection rule with no tool call stays quiet and does not seed a baseline.
 
+The published export is pinned at
+`runner/fixtures/cohere_qwen/qwen-investigation.jsonl`
+(`CohereLabs/10-2026-qwen-investigation-traces`). Each nightly run grades it
+with the same checker and writes
+`data/agent-controls/cohere-qwen/<date>/grade.json`, which the day's manifest
+can sign. The dataset README's prefill sample
+(`qwen-prefill.jsonl`, `details.example.invalid`) stays quiet. No new behavior
+ids. No model call.
+
 ---
 
 ## Secrets

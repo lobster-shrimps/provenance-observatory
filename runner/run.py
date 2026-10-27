@@ -548,6 +548,13 @@ def main() -> int:
     ap.add_argument("--targets", default=os.path.join(ROOT, "targets.yaml"))
     a = ap.parse_args()
     cfg = load_config(a.targets)
+    import trace_grade
+    try:
+        gpath = trace_grade.write_grade(DATA_DIR, date.today().isoformat())
+    except (OSError, RuntimeError) as e:
+        print(f"[trace-grade] {e}", file=sys.stderr)
+        return 2
+    print(f"[trace-grade] {gpath}")
     defaults = cfg.get("defaults", {})
     budget = cfg.get("budget", {})
     # Pull the persisted drift state from the private staging repo (if
