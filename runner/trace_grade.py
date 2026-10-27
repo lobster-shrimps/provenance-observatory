@@ -34,23 +34,52 @@ def _sha256(path: str) -> str:
     return h.hexdigest()
 
 
+def _session_header(path: str) -> dict:
+    """Dataset, revision, and original-trace hash from the JSONL session line.
+
+    The graded file is the CohereLabs export. Its first line names the source
+    the export was converted from. A missing field is a failed grade.
+    """
+    with open(path, encoding="utf-8") as fh:
+        line = fh.readline()
+    try:
+        row = json.loads(line)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("pinned trace has no session header") from exc
+    source = row.get("source") if isinstance(row, dict) else None
+    if not isinstance(source, dict):
+        raise RuntimeError("pinned trace session header has no source")
+    header = {
+        "dataset": str(source.get("dataset") or ""),
+        "revision": str(source.get("revision") or ""),
+        "trace_sha256": str(source.get("trace_sha256") or ""),
+    }
+    if not all(header.values()):
+        raise RuntimeError(
+            "pinned trace session header is missing dataset, revision, "
+            "or original-trace hash"
+        )
+    return header
+
+
 def grade() -> dict:
     """Return the grade record. Ids are sorted. Prefill ids must be empty."""
     caught = os.path.join(FIXTURE_DIR, CAUGHT_NAME)
     prefill = os.path.join(FIXTURE_DIR, PREFILL_NAME)
+    header = _session_header(caught)
     caught_rows = agent_behaviors.scan_trace(
         open(caught, encoding="utf-8").read())
     prefill_rows = agent_behaviors.scan_trace(
         open(prefill, encoding="utf-8").read())
     return {
         "kind": "trace-grade",
-        "measurement_path": "direct",
         "source_id": agent_behaviors.SOURCE_ID,
         "source_url": agent_behaviors.SOURCE_URL,
         "dataset": DATASET,
         "dataset_revision": DATASET_REVISION,
         "trace_file": CAUGHT_NAME,
         "trace_sha256": _sha256(caught),
+        "session_header": header,
         "behavior_ids": sorted(row["id"] for row in caught_rows),
         "prefill_file": PREFILL_NAME,
         "prefill_sha256": _sha256(prefill),
@@ -60,8 +89,10 @@ def grade() -> dict:
             "A cue-response completion, not a spontaneous tool trace."
         ),
         "note": (
-            "Graded with the existing checker. No new behavior ids. "
-            "No model call and no API key."
+            "The checker reads Pi JSONL: a custom role is context, and "
+            "assistant thinking and toolCall arguments are graded. A "
+            "semicolon separates commands in the same inventory. Behavior "
+            "ids are unchanged. No model call and no API key."
         ),
     }
 
@@ -72,7 +103,10 @@ def write_grade(data_dir: str, date_str: str) -> str:
     Raises RuntimeError when the caught ids or the quiet prefill drift.
     """
     rec = grade()
-    if rec["behavior_ids"] != EXPECTED_IDS or rec["prefill_behavior_ids"]:
+    header = rec.get("session_header") or {}
+    if (rec["behavior_ids"] != EXPECTED_IDS or rec["prefill_behavior_ids"]
+            or not header.get("dataset") or not header.get("revision")
+            or not header.get("trace_sha256")):
         raise RuntimeError(
             "pinned Qwen trace grade drifted: "
             f"ids={rec['behavior_ids']} prefill={rec['prefill_behavior_ids']}"

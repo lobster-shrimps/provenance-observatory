@@ -2,6 +2,7 @@
   "schema_version": "0.1.0",
   "date": "2026-10-27",
   "entries": {
+    "agent-controls/cohere-qwen/2026-10-27/grade.json": "e7992f86be5aa230e7eb3b05fff57487281fbb5b4999f6d1114674c812833824",
     "anthropic-frontier/2026-10-27/verdict.json": "071f1079bc7d1a7786d68a704390e981e8de21812b8886b564e66c28dd6e999b",
     "control-deepseek-positive/2026-10-27/verdict.json": "654586d0daccbe4c313fd0786d27e00424135d55ee2e939f3c91005033dc794f",
     "control-openai-negative/2026-10-27/verdict.json": "db21b7e0de7177853c585355e9cc6bf2b2429a072954c71ddd1e42ddf39b57b4",
@@ -9,5 +10,5 @@
     "moonshot-direct/2026-10-27/verdict.json": "fa52b189c5da1c5fdef34e7f1eb3707b07135ed4ce5a6743353df1eeefcc5c7b",
     "openai-frontier/2026-10-27/verdict.json": "7cd4e8acded9041bb1f103a887707199febdecd43e0a47e3dff0d3d84212e6ed"
   },
-  "manifest_root": "c32999eba3e662731553e53e63e96a61feca75fecf1fd4d90085f1fb874e5213"
+  "manifest_root": "fb72901a75ff39daf5b3c25a455c053f253531d720bd21a2a44b49534deedda8"
 }

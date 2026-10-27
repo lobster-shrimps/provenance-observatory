@@ -27,6 +27,27 @@ def test_record_without_measurement_path_defaults_direct():
     assert ok
 
 
+def test_trace_grade_is_signable_without_measurement_path():
+    ok, reason = P.is_publishable({"kind": "trace-grade", "behavior_ids": []})
+    assert ok and reason == ""
+
+
+def test_trace_grade_via_omniroute_is_not_signable():
+    ok, reason = P.is_publishable({
+        "kind": "trace-grade",
+        "measurement_path": "via_omniroute",
+    })
+    assert ok is False and "trace-grade" in reason
+
+
+def test_contradicted_trace_grade_is_quarantined():
+    ok, reason = P.is_publishable({
+        "kind": "trace-grade",
+        "cross_check": {"state": "CONTRADICTED"},
+    })
+    assert ok is False and "CONTRADICTED" in reason
+
+
 def test_via_omniroute_calibrated_and_disclosed_is_publishable():
     ok, reason = P.is_publishable(_via(calibrated=True, disclosed=True))
     assert ok and reason == ""

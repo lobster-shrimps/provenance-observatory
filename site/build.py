@@ -1769,15 +1769,25 @@ def _trace_grade_html(data_dir: str) -> str:
         prefill_text = "prefill ids: " + ", ".join(html.escape(str(i)) for i in prefill)
     else:
         prefill_text = "prefill completion stayed quiet"
-    sha = html.escape(str(rec.get("trace_sha256") or "")[:16])
+    header = rec.get("session_header") if isinstance(rec.get("session_header"), dict) else {}
     dataset = html.escape(str(rec.get("dataset") or ""))
+    revision = html.escape(str(rec.get("dataset_revision") or ""))
+    file_sha = html.escape(str(rec.get("trace_sha256") or ""))
+    header_dataset = html.escape(str(header.get("dataset") or ""))
+    header_revision = html.escape(str(header.get("revision") or ""))
+    header_sha = html.escape(str(header.get("trace_sha256") or ""))
+    note = html.escape(str(rec.get("note") or ""))
     day = html.escape(str(rec.get("date") or ""))
     return (
         '<section class="agents"><h2>Pinned trace grade</h2>'
-        f'<p class="small">Graded <span class="mono">{dataset}</span> '
-        f'({day}, trace sha256 {sha}…) with the existing checker. '
-        f'Ids: {id_text}. {prefill_text}. No new behavior ids. '
-        'No model call.</p></section>'
+        f'<p class="small">{note} '
+        f'Graded file <span class="mono">{dataset}</span> '
+        f'revision <span class="mono">{revision}</span> '
+        f'sha256 <span class="mono">{file_sha}</span>. '
+        f'Session header <span class="mono">{header_dataset}</span> '
+        f'revision <span class="mono">{header_revision}</span> '
+        f'original-trace sha256 <span class="mono">{header_sha}</span> '
+        f'({day}). Ids: {id_text}. {prefill_text}.</p></section>'
     )
 
 

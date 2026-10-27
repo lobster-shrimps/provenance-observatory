@@ -7,11 +7,16 @@ All notable changes to the Provenance Observatory are recorded here.
 ### Added — pinned Qwen trace grade
 
 - `runner/fixtures/cohere_qwen/qwen-investigation.jsonl` is the published
-  `CohereLabs/10-2026-qwen-investigation-traces` export. The nightly runner
-  grades it with the existing checker and writes
-  `data/agent-controls/cohere-qwen/<date>/grade.json` into the signed manifest.
-  The caught trace keeps the same behavior ids. The dataset README prefill
-  sample stays quiet. No new behavior ids. No model call.
+  `CohereLabs/10-2026-qwen-investigation-traces` export. The checker reads
+  that Pi JSONL (a custom role is context; assistant thinking and toolCall
+  arguments are graded) and treats a semicolon as a command boundary, so the
+  published one-line script counts as the same inventory. Behavior ids are
+  unchanged. The nightly runner writes
+  `data/agent-controls/cohere-qwen/<date>/grade.json` as `kind: trace-grade`
+  (not a `direct` endpoint measurement) into the signed manifest. The receipt
+  quotes the session-header dataset, revision, and original-trace hash beside
+  the CohereLabs file hash. The dataset README prefill sample stays quiet.
+  No new behavior ids. No model call.
 
 ### Added — concerning agent behavior on captured traces
 

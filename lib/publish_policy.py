@@ -54,6 +54,14 @@ def is_publishable(record: dict) -> tuple[bool, str]:
                        "for human review; the observatory never auto-publishes a "
                        "'router misrepresents its model' claim about a named third party.")
 
+    # A file grade is not a first-party probe. `direct` means a served endpoint.
+    # Sign the grade as its own kind, and do not require that label.
+    if record.get("kind") == "trace-grade":
+        if _is_via_omniroute(record):
+            return False, ("trace-grade record carries a proxy measurement — "
+                           "a file grade is not a via_omniroute verdict.")
+        return True, ""
+
     if not _is_via_omniroute(record):
         mp = record.get("measurement_path", "direct")
         if mp == "direct":
