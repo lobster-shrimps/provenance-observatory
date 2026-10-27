@@ -82,7 +82,16 @@ python site\build.py --data data --out site\dist
 python runner/run.py --targets targets.yaml
 ```
 
-Each run writes neutral evidence + a verdict to `data/<target>/<date>/verdict.json` and a signed daily manifest. Adding a monitored target (API or web app): [`docs/adding-targets.md`](docs/adding-targets.md).
+Each run writes neutral evidence + a verdict to `data/<target>/<date>/verdict.json` and a signed daily manifest.
+
+## Add an API or a web target
+
+The nightly cron stays `17 3 * * *` UTC. A new target is one entry in [`targets.yaml`](targets.yaml). The next scheduled run picks it up. There is no second schedule.
+
+1. Add the entry. An API needs `base_url`, `model`, `api_style`, and `auth_env`. A web app needs `api_style: template`, the captured `request_template`, and `cookie_env`. The field guide is [`docs/adding-targets.md`](docs/adding-targets.md). The probe's Add target wizard (`provenance-probe serve`, then `/wizard`) writes those same fields into a local JSON file you can copy from.
+2. Leave `authorized: false` until there is written authorization. Commercial targets also need `OBSERVATORY_PROBE_COMMERCIAL=1`, which the nightly workflow already sets.
+3. Add the Actions secret named by `auth_env` or `cookie_env`. The runner maps `auth_env` to the probe's `auth_value_env`.
+4. Do not list the private 12-hour Gemini watch here. That clock is `provenance-probe watch --once` on the probe repo's `examples/private-watch.json`. This cron does not change to match it.
 
 ## 🗂️ Layout
 

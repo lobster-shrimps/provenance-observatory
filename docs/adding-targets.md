@@ -1,6 +1,7 @@
 # Adding a monitored target
 
-A target is one entry in [`targets.yaml`](../targets.yaml). Each night
+A target is one entry in [`targets.yaml`](../targets.yaml). The nightly cron
+stays `17 3 * * *` UTC. Each night
 `runner/run.py` runs `provenance-probe assess` against it as a **black-box CLI**
 (the engine is never imported), diffs the result against a pinned baseline for
 drift, and writes a two-tier record to `data/<target>/<date>/verdict.json`.

@@ -4,6 +4,13 @@ All notable changes to the Provenance Observatory are recorded here.
 
 ## [Unreleased]
 
+### Docs — how a new target joins the nightly run
+
+- README states the add path: one `targets.yaml` entry, `authorized: false`
+  until written authorization, the secret named by `auth_env` or `cookie_env`.
+  The cron stays `17 3 * * *` UTC. The private 12-hour Gemini watch is a
+  different clock and is not added here.
+
 ### Added — pinned Qwen trace grade
 
 - `runner/fixtures/cohere_qwen/qwen-investigation.jsonl` is the published
