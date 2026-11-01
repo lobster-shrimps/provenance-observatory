@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1.0",
+  "date": "2026-11-01",
+  "entries": {
+    "agent-controls/cohere-qwen/2026-11-01/grade.json": "7d1dbae8ec65543eb13ce2fc2e8e2da2259ff0465747f890a524036b692dc0c0",
+    "anthropic-frontier/2026-11-01/verdict.json": "38762a5c765315b8326af96979d933b3eff85fda1876816b50210286950ffa35",
+    "control-deepseek-positive/2026-11-01/verdict.json": "3fc4dcf8771805e8c4d0bbc8e54ef7da02ab59ac8ba89702ba433382f8f6193c",
+    "control-openai-negative/2026-11-01/verdict.json": "da61afbd93844aeee5cb8d67795f68df4d4ad3410c5b86db747b067c389f8842",
+    "deepseek-direct/2026-11-01/verdict.json": "bc1c30635bd6ba299605a3cee70e6e624306950f047e5d9fdff5b13e16dabfff",
+    "moonshot-direct/2026-11-01/verdict.json": "7b760dbad8266984c02656c45c8c46dabc38c6bf1f1921e8493f060505ea6537",
+    "openai-frontier/2026-11-01/verdict.json": "10e52e3395799d9ea7f3fd0ed5e289b471502df974ef62e146c73bc66a44f1d7"
+  },
+  "manifest_root": "bd11e947fe77c8b425074ecac369602257fee70ed6e1beec61dbc53c73ce0baf"
+}
